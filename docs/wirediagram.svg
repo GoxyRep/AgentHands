@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="420" viewBox="0 0 880 420" font-family="-apple-system, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#555"/>
+    </marker>
+  </defs>
+
+  <style>
+    .box { fill: #f5f5f7; stroke: #555; stroke-width: 1.5; rx: 10; }
+    .label { fill: #111; font-size: 14px; font-weight: 600; }
+    .sub { fill: #666; font-size: 11px; }
+    .cable { fill: #333; font-size: 11px; font-weight: 600; }
+    .line { stroke: #555; stroke-width: 2; fill: none; marker-end: url(#arrow); }
+    .line2 { stroke: #555; stroke-width: 2; fill: none; marker-end: url(#arrow); stroke-dasharray: 6 4; }
+  </style>
+
+  <rect class="box" x="40" y="40" width="230" height="110" rx="10"/>
+  <text class="label" x="155" y="80" text-anchor="middle">Mac (target)</text>
+  <text class="sub" x="155" y="100" text-anchor="middle">the machine being controlled</text>
+  <text class="sub" x="155" y="118" text-anchor="middle">HDMI OUT · USB-C</text>
+
+  <rect class="box" x="330" y="40" width="230" height="110" rx="10"/>
+  <text class="label" x="445" y="80" text-anchor="middle">PiKVM V4 Mini</text>
+  <text class="sub" x="445" y="100" text-anchor="middle">HDMI IN · USB OTG · RJ45</text>
+  <text class="sub" x="445" y="118" text-anchor="middle">hardware KVM</text>
+
+  <rect class="box" x="610" y="40" width="230" height="110" rx="10"/>
+  <text class="label" x="725" y="80" text-anchor="middle">Router / LAN</text>
+  <text class="sub" x="725" y="100" text-anchor="middle">trusted network segment</text>
+
+  <rect class="box" x="610" y="250" width="230" height="110" rx="10"/>
+  <text class="label" x="725" y="290" text-anchor="middle">Agent host</text>
+  <text class="sub" x="725" y="310" text-anchor="middle">runs hermes-hands</text>
+  <text class="sub" x="725" y="328" text-anchor="middle">Hermes or any Python agent</text>
+
+  <!-- Eyes: HDMI -->
+  <line class="line" x1="270" y1="75" x2="326" y2="75"/>
+  <text class="cable" x="298" y="65" text-anchor="middle">HDMI — the eyes</text>
+
+  <!-- Hands: OTG -->
+  <line class="line" x1="330" y1="115" x2="274" y2="115"/>
+  <text class="cable" x="302" y="135" text-anchor="middle">USB OTG — the hands</text>
+
+  <!-- Network -->
+  <line class="line" x1="560" y1="75" x2="606" y2="75"/>
+  <text class="cable" x="583" y="65" text-anchor="middle">RJ45</text>
+
+  <!-- Agent -> router -->
+  <line class="line2" x1="725" y1="246" x2="725" y2="156"/>
+  <text class="cable" x="760" y="205" text-anchor="middle">Wi-Fi / LAN</text>
+
+  <!-- Agent -> PiKVM (HTTPS) -->
+  <path class="line2" d="M 610 305 C 445 305, 445 160, 445 156"/>
+  <text class="cable" x="500" y="290">HTTPS API (https://&lt;IP&gt;)</text>
+
+  <!-- Power -->
+  <rect class="box" x="330" y="250" width="230" height="110" rx="10"/>
+  <text class="label" x="445" y="290" text-anchor="middle">5.1V / 3A PSU</text>
+  <text class="sub" x="445" y="310" text-anchor="middle">power for the PiKVM</text>
+  <line class="line" x1="445" y1="246" x2="445" y2="156"/>
+  <text class="cable" x="465" y="205">USB-C PWR</text>
+
+  <!-- Serial -->
+  <rect class="box" x="40" y="250" width="230" height="110" rx="10"/>
+  <text class="label" x="155" y="290" text-anchor="middle">Serial console</text>
+  <text class="sub" x="155" y="310" text-anchor="middle">emergency channel (keep open)</text>
+  <line class="line2" x1="274" y1="305" x2="326" y2="305"/>
+  <text class="cable" x="300" y="295" text-anchor="middle">USB-Serial</text>
+</svg>

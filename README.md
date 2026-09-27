@@ -49,7 +49,7 @@ An agent could also drive a computer through the OS (Accessibility APIs, `clicli
 ## Quick start
 
 ```bash
-git clone https://github.com/<you>/hermes-hands && cd hermes-hands
+git clone https://github.com/GoxyRep/AgentHands.git && cd AgentHands
 uv sync --extra dev        # or: pip install -e ".[dev]"
 uv run pytest -v --cov=hermes_hands   # 78 tests, zero network calls
 ```

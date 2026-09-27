@@ -236,6 +236,41 @@ uv run python examples/observe_only.py    # snapshots only, no input at all
 
 ---
 
+## 3.5 Power-off & reconnect (day-2 ritual)
+
+The rig is **fully persistent**: static IPs, certificates, users, auto-snapshots, Keychain secrets — nothing needs re-configuring after a power cycle. There is only a correct *order* of operations.
+
+### Powering off
+
+1. **Clean shutdown first** (serial console or SSH): `shutdown -h now` — wait ~10 s until the Activity LED goes dark. The filesystem is read-only by default, so pulling power is *mostly* safe, but a clean shutdown is free and removes all doubt.
+2. **Unplug cables in any order** — everything is passive when powered down. Only rule: never move the DIP switches.
+
+If the PiKVM is off but the agent machine keeps running: nothing breaks. Client calls fail fast with `ConnectError` (httpx timeout 30 s), no hanging processes.
+
+### Reconnecting (order matters, see A9 for why)
+
+| Step | Cable | Into | Note |
+|---|---|---|---|
+| 1 | RJ45 (USB-C→RJ45 adapter end) | PiKVM **front** Ethernet port | the network |
+| 2 | USB-Serial (USB-A → Mac, USB-C → **IOIOI**) | both ends | emergency console, connect **before** power |
+| 3 | **Power** USB-C 5.1V/3A | power port | boots in ~40 s |
+| 4 | HDMI | **HDMI IN** | the eyes |
+| 5 | **OTG: C→A cable + A→C adapter** (never C→C, see §5.1) | OTG port → Mac | the hands |
+
+After step 3 the PiKVM comes up configured: same IP, same cert, same users. Verify from the agent machine:
+
+```bash
+ping -c 1 192.168.50.2                                   # link up
+curl --cacert ~/.pikvm/ca.pem -o /dev/null -w "%{http_code}\n" \
+     https://192.168.50.2/api/auth/check                 # expect 401
+# then, from the hermes-hands repo:
+uv run python examples/observe_only.py                   # auth+HID+snapshot, zero input
+```
+
+If HID shows offline: re-check the OTG cable path (§5.1). If snapshots 503: auto-snapshots need a stream consumer or ~10 s after boot (they're persisted in `override.yaml`). If serial is needed again: `screen -dmS pikvm-serial /dev/cu.usbserial-* 115200`.
+
+---
+
 ## 4. Verification checklist
 
 You're done when all of these are true:

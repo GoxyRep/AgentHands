@@ -1,6 +1,7 @@
 """Hermes Hands v1 — open-source release. User-facing documentation."""
 
 import argparse
+import os
 import sys
 from pathlib import Path
 
@@ -11,6 +12,21 @@ from hermes_hands.policy import PolicyGate
 from hermes_hands import __version__
 
 REPO = Path(__file__).resolve().parents[1]
+
+
+def load_dotenv(path: Path) -> None:
+    """Minimal .env loader: KEY=VALUE lines, # comments, no quoting magic."""
+    if not path.is_file():
+        return
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, _, value = line.partition("=")
+        key, value = key.strip(), value.strip()
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in ("'", '"'):
+            value = value[1:-1]
+        os.environ.setdefault(key, value)
 
 
 def main() -> int:
@@ -25,6 +41,8 @@ def main() -> int:
         "--count", type=int, default=1, help="Number of snapshots to take (default 1)"
     )
     args = parser.parse_args()
+
+    load_dotenv(REPO / ".env")
 
     print(f"hermes-hands v{__version__} — observe-only demo")
     print("Policy: observe-only — clicks, typing, and all input are DISABLED.\n")

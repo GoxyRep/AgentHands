@@ -16,6 +16,8 @@ import sys
 import time
 from pathlib import Path
 
+import os
+
 from hermes_hands.audit import AuditLogger
 from hermes_hands.config import HandsConfig, ConfigError
 from hermes_hands.pikvm_client import PikvmClient
@@ -26,9 +28,26 @@ REPO = Path(__file__).resolve().parents[1]
 SNAPSHOT_DIR = REPO / "logs"
 
 
+def load_dotenv(path: Path) -> None:
+    """Minimal .env loader: KEY=VALUE lines, # comments, no quoting magic."""
+    if not path.is_file():
+        return
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, _, value = line.partition("=")
+        key, value = key.strip(), value.strip()
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in ("'", '"'):
+            value = value[1:-1]
+        os.environ.setdefault(key, value)
+
+
 def main() -> int:
     print(f"hermes-hands v{__version__} — MVP acceptance check")
     print("WARNING: this script MOVES THE MOUSE and TYPES. Open TextEdit, focus it, then run.\n")
+
+    load_dotenv(REPO / ".env")
 
     # Mouse click stays disabled: MVP check only moves and types.
     policy = PolicyGate(allow_mouse_click=False)

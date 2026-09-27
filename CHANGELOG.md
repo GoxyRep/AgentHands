@@ -4,6 +4,17 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+- **BUILD.md** — hardened with field-tested findings from the first full v1 rig bring-up (direct-link build, no router):
+  - A1/A4: direct USB-C→RJ45 point-to-point link is now a documented layout (Realtek RTL8153 / ASIX AX88179 chipsets, static IPs on both ends, persistent `systemd-networkd` config on the PiKVM).
+  - A8.5 (new): regenerate the PiKVM TLS certificate with a proper SAN (`DNS:pikvm, DNS:localhost, IP:<your IP>`) so CA pinning works without `HERMES_HANDS_INSECURE_TLS`; stock `CN=localhost` certs fail hostname validation.
+  - A9: **the #1 trap** — a USB-C→USB-C cable on the OTG port silently fails with macOS (PiKVM reports `UDC_STATE=configured`, the Mac never mounts the HID gadget). Use the C→A cable + A→C adapter for OTG.
+  - A10: on kvmd ≥ 4.2 (janus video stack), API snapshots need automatic snapshots enabled via `override.yaml` (`idle_interval`/`live_interval`); otherwise `/api/streamer/snapshot` returns 503.
+  - Troubleshooting §5.1 rewritten (C→C trap first, macOS "Allow new accessories" policy, `hidutil`/`ioreg` verification commands); §5.5 fixed (`pacman -Q kvmd`, not `dpkg`; RTC-battery noise explained); §5.7 (new) NAT recipe for `pikvm-update` on a routerless rig; §5.8 (new) SAN/cert-pinning failure mode.
+- **examples** — both `observe_only.py` and `mvp_check.py` now load the repo's `.env` automatically (minimal built-in dotenv loader, no new dependency; real env vars still take precedence).
+
 ## [1.0.0] — 2026-09-27
 
 First public, open-source release. The core client (0.1.0) is unchanged and battle-tested against a live PiKVM V4 Mini; this release wraps it in the documentation, examples, and release scaffolding required for anyone to build the rig from scratch.

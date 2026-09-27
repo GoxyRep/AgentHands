@@ -344,6 +344,26 @@ A `.pacnew` warning and `could not get file information for var/log/...` lines d
 ### 5.8 `certificate is not valid for '192.168.50.2'` with CA pinning
 The stock PiKVM cert has `CN=localhost` and no SAN for your IP. Don't disable verification — regenerate the cert with a proper SAN (see step A8.5). One-time fix, survives reboots (but not `pikvm-update` if it replaces nginx certs — re-check after major updates).
 
+### 5.9 Mouse clicks land near the target but drift, and miss at screen edges
+Three distinct causes stack here — check them in order:
+
+1. **Coordinate spaces are being mixed.** The snapshot (e.g. 1920×1080 JPEG), the HID API units (±32767, `0,0` = center), and the OS pointer coordinates (e.g. macOS points 1512×982) are three different spaces. Never feed snapshot/OCR pixel coordinates straight into `send_mouse_move` — convert first: `hid = (snap_px - bar) / content_w * 65536 - 32768`.
+2. **Pillarbox/letterbox in the snapshot.** If the target display's aspect ratio differs from the capture frame (e.g. a 1512×982 ≈ 1.54 Mac screen captured into 1920×1080 = 16:9), the picture is fit by height and pillarboxed — black bars hide ~13% of the frame width, and the *content* no longer spans 0..1920. Compute the content box (bars included in the HID span!) or your clicks will be perfect in the center and ~100px off at the edges.
+3. **Dual-mode mouse (PiKVM V4 default).** Both absolute and relative HID devices are exposed; macOS may pick the relative one, so kvmd emulates absolute targets via relative deltas → pointer acceleration makes the cursor drift while idle and miss at edges. Fix: absolute-only mode. In `/etc/kvmd/override.yaml` (mind the 2-space indent — it nests under the existing `kvmd:` key, don't create a second root key or other settings like `snapshot:` will silently drop):
+   ```yaml
+   kvmd:
+     snapshot:        # ...your existing keys...
+       idle_interval: 10
+     hid:
+       mouse:
+         absolute: true
+       mouse_alt:
+         device: ""
+   ```
+   Then `systemctl restart kvmd`. After this, an idle cursor must stay perfectly still — if it still drifts, the host is using the relative device.
+
+Verification: move to a corner (`to_x=-32767&to_y=-32767` should put the cursor at the top-left of the screen), re-snapshot, and confirm the cursor is where you expect.
+
 ---
 
 Questions the guide didn't answer? Open an issue — this document is meant to be the last thing between a stranger and working hands.

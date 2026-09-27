@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - **BUILD.md** — hardened with field-tested findings from the first full v1 rig bring-up (direct-link build, no router):
   - **§3.5 (new)**: power-off & reconnect ritual — clean `shutdown` before unplugging, cable order for reconnect (network → serial → power → HDMI → OTG), verification commands; everything persists across power cycles, nothing to reconfigure.
+  - §5.9 (new): the three stacked causes of "clicks land near the target but drift / miss at edges" — coordinate-space mixing (snapshot px vs HID units vs OS points), pillarboxed snapshots when display aspect ≠ capture aspect, and the dual-mode (absolute+relative) mouse default on V4; with the absolute-only `override.yaml` fix and a corner-move verification.
   - A1/A4: direct USB-C→RJ45 point-to-point link is now a documented layout (Realtek RTL8153 / ASIX AX88179 chipsets, static IPs on both ends, persistent `systemd-networkd` config on the PiKVM).
   - A8.5 (new): regenerate the PiKVM TLS certificate with a proper SAN (`DNS:pikvm, DNS:localhost, IP:<your IP>`) so CA pinning works without `HERMES_HANDS_INSECURE_TLS`; stock `CN=localhost` certs fail hostname validation. A8 now recommends the `keychain:` pointer for the password.
   - A9: **the #1 trap** — a USB-C→USB-C cable on the OTG port silently fails with macOS (PiKVM reports `UDC_STATE=configured`, the Mac never mounts the HID gadget). Use the C→A cable + A→C adapter for OTG.

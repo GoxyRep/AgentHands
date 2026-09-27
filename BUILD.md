@@ -138,14 +138,16 @@ security add-generic-password -a hermes -s pikvm -w '<the password>'
 security find-generic-password -a hermes -s pikvm -w
 ```
 
-or export it in your `~/.bashrc` / `~/.zshrc`. Then create `.env` in the `hermes-hands` repo (never commit it — it's gitignored):
+Then create `.env` in the `hermes-hands` repo (never commit it — it's gitignored):
 
 ```dotenv
 PIKVM_BASE_URL=https://<IP>
 PIKVM_USERNAME=hermes
-PIKVM_PASSWORD=<the password>
-PIKVM_CA_FILE=
+PIKVM_PASSWORD=keychain:pikvm
+PIKVM_CA_FILE=/absolute/path/to/ca.pem
 ```
+
+**`keychain:pikvm` is a pointer, not a password** — the client fetches the secret from the macOS Keychain at startup (account = `PIKVM_USERNAME`, service = what you put after `keychain:`). This way no file on disk ever contains the secret itself. A literal password in `PIKVM_PASSWORD` still works if you're not on macOS or prefer it.
 
 **Expect**: `security find-generic-password -a hermes -s pikvm -w` prints the password; the `.env` file exists locally.
 **If it fails**: "The specified item could not be found" → re-run `add-generic-password` and check the service/account spelling.

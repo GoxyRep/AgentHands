@@ -39,17 +39,47 @@ class HandsConfig:
             if not p.is_file():
                 raise ConfigError(f"PIKVM_CA_FILE does not exist: {self.ca_file}")
 
+    KEYCHAIN_PREFIX = "keychain:"
+
     @classmethod
     def from_env(cls, env: dict[str, str] | None = None) -> "HandsConfig":
         """Build config from environment variables (or a provided dict).
 
         Optionally loads a .env file from the current directory.
+        If PIKVM_PASSWORD starts with "keychain:", the password is fetched
+        from the macOS Keychain instead (security find-generic-password).
         """
+        import subprocess
+
         source = env if env is not None else os.environ
 
         base_url = source.get("PIKVM_BASE_URL", "").strip()
         username = source.get("PIKVM_USERNAME", "").strip()
         password = source.get("PIKVM_PASSWORD", "").strip()
+
+        if password.startswith(cls.KEYCHAIN_PREFIX):
+            # Format: keychain:service (account is taken from PIKVM_USERNAME)
+            service = password[len(cls.KEYCHAIN_PREFIX):].strip() or "pikvm"
+            try:
+                password = subprocess.run(
+                    [
+                        "security", "find-generic-password",
+                        "-a", username or "hermes",
+                        "-s", service,
+                        "-w",
+                    ],
+                    capture_output=True, text=True, check=True,
+                ).stdout.strip()
+            except (subprocess.CalledProcessError, FileNotFoundError) as e:
+                raise ConfigError(
+                    f"Failed to fetch password from macOS Keychain "
+                    f"(service={service!r}, account={username!r}): {e}"
+                ) from e
+            if not password:
+                raise ConfigError(
+                    f"macOS Keychain returned an empty password "
+                    f"(service={service!r}, account={username!r})"
+                )
         ca_file = source.get("PIKVM_CA_FILE", "").strip() or None
 
         # Allow insecure TLS only via explicit env flag

@@ -51,7 +51,7 @@ An agent could also drive a computer through the OS (Accessibility APIs, `clicli
 ```bash
 git clone https://github.com/<you>/hermes-hands && cd hermes-hands
 uv sync --extra dev        # or: pip install -e ".[dev]"
-uv run pytest -v --cov=hermes_hands   # 72 tests, zero network calls
+uv run pytest -v --cov=hermes_hands   # 78 tests, zero network calls
 ```
 
 No hardware needed for the test suite — all HTTP is mocked. To drive a real machine, build the rig first: **[BUILD.md](BUILD.md)**.
@@ -69,6 +69,19 @@ with PikvmClient(cfg) as hands:
 ```
 
 Input methods: `move_mouse(to_x, to_y)`, `move_mouse_relative(dx, dy)`, `click_mouse(button)`, `scroll(dx, dy)`, `type_text(text)`. Every call passes the policy gate and lands in the audit log.
+
+## Configuration & secrets
+
+Config comes from environment variables / `.env` (see [.env.example](.env.example)). On macOS, the password can live **only in the Keychain** — `.env` holds a pointer:
+
+```dotenv
+PIKVM_BASE_URL=https://192.168.50.2
+PIKVM_USERNAME=hermes
+PIKVM_PASSWORD=keychain:pikvm      # fetched from macOS Keychain at startup
+PIKVM_CA_FILE=~/.pikvm/ca.pem     # pinned CA, no insecure-TLS flag needed
+```
+
+HTTPS is enforced; TLS certificates must carry your IP in their SAN (BUILD.md A8.5). Full setup walkthrough: **[BUILD.md](BUILD.md)**.
 
 ## Safety — read this before giving it hands
 

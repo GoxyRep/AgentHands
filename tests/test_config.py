@@ -74,3 +74,92 @@ class TestHandsConfig:
                 password="p",
                 ca_file="/nonexistent/ca.pem",
             )
+
+
+class TestKeychainPassword:
+    """PIKVM_PASSWORD=keychain:<service> fetches from macOS Keychain."""
+
+    def _patch_security(self, monkeypatch, output: str, returncode: int = 0):
+        """Replace subprocess.run with a fake `security` binary."""
+        class FakeCompleted:
+            def __init__(self, stdout, returncode):
+                self.stdout = stdout
+                self.returncode = returncode
+
+        def fake_run(cmd, **kwargs):
+            assert cmd[0] == "security" and "find-generic-password" in cmd
+            assert "-a" in cmd and "-s" in cmd and "-w" in cmd
+            return FakeCompleted(output, returncode)
+
+        monkeypatch.setattr("subprocess.run", fake_run)
+
+    def test_keychain_password_fetched(self, monkeypatch):
+        self._patch_security(monkeypatch, "k3ycha1n-pw\n")
+        cfg = HandsConfig.from_env({
+            "PIKVM_BASE_URL": "https://10.0.0.5",
+            "PIKVM_USERNAME": "hermes",
+            "PIKVM_PASSWORD": "keychain:pikvm",
+        })
+        assert cfg.password == "k3ycha1n-pw"
+
+    def test_keychain_default_service(self, monkeypatch):
+        """keychain: with no service name defaults to 'pikvm'."""
+        self._patch_security(monkeypatch, "pw\n")
+        cfg = HandsConfig.from_env({
+            "PIKVM_BASE_URL": "https://10.0.0.5",
+            "PIKVM_USERNAME": "hermes",
+            "PIKVM_PASSWORD": "keychain:",
+        })
+        assert cfg.password == "pw"
+
+    def test_keychain_uses_username_as_account(self, monkeypatch):
+        seen = {}
+
+        class FakeCompleted:
+            stdout = "pw\n"
+            returncode = 0
+
+        def fake_run(cmd, **kwargs):
+            seen["cmd"] = cmd
+            return FakeCompleted()
+
+        monkeypatch.setattr("subprocess.run", fake_run)
+        HandsConfig.from_env({
+            "PIKVM_BASE_URL": "https://10.0.0.5",
+            "PIKVM_USERNAME": "agent-x",
+            "PIKVM_PASSWORD": "keychain:pikvm",
+        })
+        # -a should carry the configured username
+        assert seen["cmd"][seen["cmd"].index("-a") + 1] == "agent-x"
+
+    def test_keychain_failure_raises_config_error(self, monkeypatch):
+        self._patch_security(monkeypatch, "", returncode=44)
+        with pytest.raises(ConfigError, match="Keychain"):
+            HandsConfig.from_env({
+                "PIKVM_BASE_URL": "https://10.0.0.5",
+                "PIKVM_USERNAME": "hermes",
+                "PIKVM_PASSWORD": "keychain:pikvm",
+            })
+
+    def test_keychain_empty_output_raises_config_error(self, monkeypatch):
+        """A keychain entry that exists but is empty must fail loudly."""
+        self._patch_security(monkeypatch, "\n", returncode=0)
+        with pytest.raises(ConfigError, match="empty password"):
+            HandsConfig.from_env({
+                "PIKVM_BASE_URL": "https://10.0.0.5",
+                "PIKVM_USERNAME": "hermes",
+                "PIKVM_PASSWORD": "keychain:pikvm",
+            })
+
+    def test_plain_password_untouched(self, monkeypatch):
+        """A normal password never triggers the keychain path."""
+        def fail_run(cmd, **kwargs):
+            raise AssertionError("subprocess.run must not be called")
+
+        monkeypatch.setattr("subprocess.run", fail_run)
+        cfg = HandsConfig.from_env({
+            "PIKVM_BASE_URL": "https://10.0.0.5",
+            "PIKVM_USERNAME": "admin",
+            "PIKVM_PASSWORD": "plain-secret",
+        })
+        assert cfg.password == "plain-secret"

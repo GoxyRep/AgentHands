@@ -6,14 +6,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **macOS Keychain password support**: set `PIKVM_PASSWORD=keychain:<service>` and the client fetches the secret from the macOS Keychain at startup (`security find-generic-password -a <username> -s <service> -w`). No file on disk ever contains the password itself; a literal `PIKVM_PASSWORD` still works. An empty Keychain entry fails loudly with a clear `ConfigError`. 6 new tests (78 total, coverage 91%).
+
 ### Changed
 - **BUILD.md** — hardened with field-tested findings from the first full v1 rig bring-up (direct-link build, no router):
   - A1/A4: direct USB-C→RJ45 point-to-point link is now a documented layout (Realtek RTL8153 / ASIX AX88179 chipsets, static IPs on both ends, persistent `systemd-networkd` config on the PiKVM).
-  - A8.5 (new): regenerate the PiKVM TLS certificate with a proper SAN (`DNS:pikvm, DNS:localhost, IP:<your IP>`) so CA pinning works without `HERMES_HANDS_INSECURE_TLS`; stock `CN=localhost` certs fail hostname validation.
+  - A8.5 (new): regenerate the PiKVM TLS certificate with a proper SAN (`DNS:pikvm, DNS:localhost, IP:<your IP>`) so CA pinning works without `HERMES_HANDS_INSECURE_TLS`; stock `CN=localhost` certs fail hostname validation. A8 now recommends the `keychain:` pointer for the password.
   - A9: **the #1 trap** — a USB-C→USB-C cable on the OTG port silently fails with macOS (PiKVM reports `UDC_STATE=configured`, the Mac never mounts the HID gadget). Use the C→A cable + A→C adapter for OTG.
   - A10: on kvmd ≥ 4.2 (janus video stack), API snapshots need automatic snapshots enabled via `override.yaml` (`idle_interval`/`live_interval`); otherwise `/api/streamer/snapshot` returns 503.
-  - Troubleshooting §5.1 rewritten (C→C trap first, macOS "Allow new accessories" policy, `hidutil`/`ioreg` verification commands); §5.5 fixed (`pacman -Q kvmd`, not `dpkg`; RTC-battery noise explained); §5.7 (new) NAT recipe for `pikvm-update` on a routerless rig; §5.8 (new) SAN/cert-pinning failure mode.
+  - Troubleshooting §5.1 rewritten (C→C trap first, macOS "Allow new accessories" policy, `hidutil`/`ioreg` verification commands); §5.5 fixed (`pacman -Q kvmd`, not `dpkg`; RTC-supercapacitor noise explained — it self-charges, no battery to replace on V4 Mini); §5.7 (new) NAT recipe for `pikvm-update` on a routerless rig; §5.8 (new) SAN/cert-pinning failure mode.
 - **examples** — both `observe_only.py` and `mvp_check.py` now load the repo's `.env` automatically (minimal built-in dotenv loader, no new dependency; real env vars still take precedence).
+- **.env.example** — documents the `keychain:` pointer and the SAN-certificate step.
+
+### Field-verified (live rig, 2026-09-27)
+- Full A1–A11 bring-up on a routerless direct link; kvmd updated 4.61 → 4.217; NTP synchronized (persistent default route + DNS in `systemd-networkd`, IP-based NTP servers in `timesyncd.conf.d`); RTC supercapacitor self-charged (no more `low voltage` spam).
 
 ## [1.0.0] — 2026-09-27
 
